@@ -1,32 +1,32 @@
-use rand::Rng;
+use rand::{Rng, distributions::Uniform};
 
 pub trait Trainable {
-    fn fit(&mut self, data: Vec<Vec<f32>>, labels: Vec<f32>) -> Vec<u32>;
+    fn fit(&mut self, data: Vec<Vec<f32>>, labels: Vec<f32>) -> Vec<usize>;
     fn forward(&self, data: Vec<Vec<f32>>) -> Vec<f32>;
     fn predict(&self, data: Vec<Vec<f32>>) -> Vec<f32>;
 }
 
 pub struct Perceptron {
     learning_rate: f32,
-    epochs: u32,
+    epochs: usize,
     pub weights: Vec<f32>,
     bias: f32
 }
 
 impl Perceptron {
-    pub fn new(learning_rate: f32, epochs: u32) -> Self {
+    pub fn new(learning_rate: f32, epochs: usize) -> Self {
         Self { learning_rate, epochs, weights: vec![], bias: 0.0 }
     }
 }
 
 impl Trainable for Perceptron {
-    fn fit(&mut self, data: Vec<Vec<f32>>, labels: Vec<f32>) -> Vec<u32> {
+    fn fit(&mut self, data: Vec<Vec<f32>>, labels: Vec<f32>) -> Vec<usize> {
         assert!(data.len() > 0);
 
         let n_labels = data.len();
         let n_data = data[0].len();
 
-        self.weights = vec![0.0; n_data];
+        self.weights = (0..n_data).map(|_| rand::thread_rng().sample(Uniform::from(0.0..1.0))).collect();
         let mut misses_per_epoch = vec![];
 
         for _ in 0..self.epochs {
@@ -44,10 +44,10 @@ impl Trainable for Perceptron {
             let n_correct = self.forward(data.clone())
                 .iter()
                 .zip(&labels)
-                .map(|(pred, actual)| if (actual - pred) == 0.0 { 1 } else { 0 })
-                .sum::<u32>();
+                .filter(|(pred, actual)| actual == pred)
+                .count();
 
-            misses_per_epoch.push(n_labels as u32 - n_correct);
+            misses_per_epoch.push(n_labels - n_correct);
         }
 
         misses_per_epoch
